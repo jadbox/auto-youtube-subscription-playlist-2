@@ -1,10 +1,3 @@
-// MAYBE TODO: Better exception handling for Youtube API calls
-// MAYBE TODO: Deal with playlist limits (~ 200-218 videos)
-// MAYBE TODO: Special keyword "ALLOTHER" for all other (unmentioned yet in the app) channel ids
-// MAYBE TODO: Filtering based on text (regexp?) in title and description
-// MAYBE TODO: NOT flags to include videos that are NOT from certain channels / do not contain text, etc
-
-
 function doGet(e) {
     // url = https://docs.google.com/spreadsheets/d/XXXXXXXXXX/edit#gid=0
     var sheetID = 'XXXXXXXXXX';  // Paste the Sheet ID here, it's the long string in the Sheet URL
@@ -20,8 +13,44 @@ function doGet(e) {
     return t.evaluate();
 }
 
+function getRedditVideoIds(subreddit, rtime, count) {
+  count = count || 20;
+  subreddit = subreddit || 'videos';
+  rtime = rtime || 'day';
+  
+  var payload = {
+    "username": "New Update"
+  };
+
+  var url = 'https://t1kfdpz8b4.execute-api.eu-west-1.amazonaws.com/prod/Sheets';
+  var options = {
+    'method': 'get'
+  };
+
+  var response = UrlFetchApp.fetch("https://www.reddit.com/r/"+subreddit+"/top/.json?count="+count+"&t="+rtime,options);
+  var json = response.getContentText();
+	var data = JSON.parse(json);
+    var c = data.data.children;
+    var videoids = [];
+    for(var i = 0; i < c.length; i++) {
+      var child = c[i];
+      if(child.data.domain!=='youtube.com') continue;
+      //if(!child.data.secure_media) Logger.log(child.data);
+      var html_entry = child.data.secure_media.oembed.html;
+      //Logger.log("html_entry");
+      //Logger.log(html_entry);
+      var match = (new RegExp("embed/([a-zA-Z0-9_]+)", "gi")).exec(html_entry);
+      if(!match || match.length === 0) continue;
+      var vid = match[1];
+      //Logger.log(vid);
+      videoids.push(vid);
+    }
+  Logger.log(videoids);
+  return videoids;
+}
+
 function updatePlaylists(sheet) {
-  if (!sheet || sheet.toString() != 'Sheet') sheet = SpreadsheetApp.openById('XXXXXXXXXX').getSheets()[0]; // Hotfix, Paste the Sheet ID here, it's the long string in the Sheet URL
+  if (sheet.toString() != 'Sheet') sheet = SpreadsheetApp.openById('XXXXXXXXXX').getSheets()[0]; // Hotfix, Paste the Sheet ID here, it's the long string in the Sheet URL
   var data = sheet.getDataRange().getValues();
   var reservedTableRows = 3; // Start of the range of the PlaylistID+ChannelID data
   var reservedTableColumns = 2; // Start of the range of the ChannelID data
@@ -45,11 +74,14 @@ function updatePlaylists(sheet) {
     /// ...get channels...
     var channelIds = [];
     var playlistIds = [];
+    var subreddits = [];
     for (var iColumn = reservedTableColumns; iColumn < sheet.getLastColumn(); iColumn++) {
       var channel = data[iRow][iColumn];
       if (!channel) continue;
       else if (channel == "ALL")
         channelIds.push.apply(channelIds, getAllChannelIds());
+      else if (channel.substring(0,2) == "r/" && channel.length > 3) 
+        subreddits.push(channel.replace('r/',''));
       else if (channel.substring(0,2) == "PL" && channel.length > 10)  // Add videos from playlist. MaybeTODO: better validation, since might interpret a channel with a name "PL..." as a playlist ID
          playlistIds.push(channel);
       else if (!(channel.substring(0,2) == "UC" && channel.length > 10)) // Check if it is not a channel ID (therefore a username). MaybeTODO: do a better validation, since might interpret a channel with a name "UC..." as a channel ID
@@ -73,6 +105,10 @@ function updatePlaylists(sheet) {
     }
     for (var i = 0; i < playlistIds.length; i++) {
       videoIds.push.apply(videoIds, getPlaylistVideoIds(playlistIds[i], lastTimestamp));
+    }
+    
+    for (var i = 0; i < subreddits.length; i++) {
+      videoIds.push.apply(videoIds, getRedditVideoIds(subreddits[i], lastTimestamp));
     }
 
     //causes only first line to be updated
