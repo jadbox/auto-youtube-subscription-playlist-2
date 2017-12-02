@@ -13,8 +13,54 @@ function doGet(e) {
     return t.evaluate();
 }
 
+function getAllPlaylistIds(playlistId, count) {
+  var videoIds = [];
+
+  var nextPageToken = '';
+  while (nextPageToken != null){
+
+    try {
+      var results = YouTube.PlaylistItems.list('snippet,contentDetails', {
+        playlistId: playlistId,
+        maxResults: count || 50,
+        order: "date",
+        pageToken: nextPageToken});
+    } catch (e) {
+      Logger.log("ERROR: " + e.message);
+      nextPageToken = null;
+    }
+
+    for (var j = 0; j < results.items.length; j++) {
+      var item = results.items[j];
+      videoIds.push(item.id);
+    }
+
+    nextPageToken = results.nextPageToken;
+  }
+
+  return videoIds;
+}
+
+function delAllPlaylistVideos(playlistId, count) {
+  playlistId = playlistId || 'PL6VHFTCn-SVjRhR9J8MXk48uJjHWLt_Ri';
+  count = count || 50;
+  var chanVideosIds = getAllPlaylistIds(playlistId, count);
+  for (var i = 0; i < chanVideosIds.length; i++) {
+    playlistItemsDelete( chanVideosIds[i], {} );
+  }
+}
+
+function playlistItemsDelete(id, params) {
+  params = params || {};
+
+  var response = YouTube.PlaylistItems.remove(id, params);
+  //printResults(response);
+  return response;
+}
+
 function getRedditVideoIds(subreddit, rtime, count) {
   count = count || 20;
+  if (count > 50) count = 50;
   subreddit = subreddit || 'videos';
   rtime = rtime || 'day';
   
@@ -22,12 +68,12 @@ function getRedditVideoIds(subreddit, rtime, count) {
     "username": "New Update"
   };
 
-  var url = 'https://t1kfdpz8b4.execute-api.eu-west-1.amazonaws.com/prod/Sheets';
+  var url = "https://www.reddit.com/r/"+subreddit+"/top/.json?count="+count+"&t="+rtime;
   var options = {
     'method': 'get'
   };
 
-  var response = UrlFetchApp.fetch("https://www.reddit.com/r/"+subreddit+"/top/.json?count="+count+"&t="+rtime,options);
+  var response = UrlFetchApp.fetch(url,options);
   var json = response.getContentText();
 	var data = JSON.parse(json);
     var c = data.data.children;
@@ -95,6 +141,12 @@ function updatePlaylists(sheet) {
       }
       else
         channelIds.push(channel);
+    }
+    
+    // Clear the playlist if this is only a reddit playlist
+    if (subreddits.length > 0 && channelIds.length == playlistIds.length == 0) {
+      delAllPlaylistVideos(playlistId);
+      Logger.log('cleared reddit playlist before repopulating');
     }
 
     /// ...get videos from the channels...
