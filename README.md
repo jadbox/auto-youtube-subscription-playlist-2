@@ -1,5 +1,5 @@
 # Description [![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=RPRJ8UNWNWUK2)
-This is a Google Apps Script that automatically adds new Youtube videos to playlists (a replacement for Youtube Collections feature).
+This is a Google Apps Script that automatically adds new Youtube (or Subreddit) videos to playlists (a replacement for Youtube Collections feature).
 
 This is done using Google Sheets for interface, Google Script + Youtube API v3 for executing and scheduling.
 
@@ -42,6 +42,7 @@ This is done using Google Sheets for interface, Google Script + Youtube API v3 f
       - Channel ID (last part (after last `/`) in `https://www.youtube.com/channel/UCzMVH2jEyEwXPBvyht8xQNw`)
       - Playlist ID (last part (after `?list=` in `https://www.youtube.com/playlist?list=PLd0LhgZxFkVKh_JNXcdHoPYo832Wu9fub`)
       - `ALL`, to add all new videos from all of your subscriptions
+      - `r/videos` will pull the top daily 25 videos from the subreddit r/videos (*WARNING:* will clear the playlist on sync)
 
 # Usage
 
