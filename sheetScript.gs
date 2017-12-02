@@ -42,7 +42,7 @@ function getAllPlaylistIds(playlistId, count) {
 }
 
 function delAllPlaylistVideos(playlistId, count) {
-  playlistId = playlistId || 'PL6VHFTCn-SVjRhR9J8MXk48uJjHWLt_Ri';
+  playlistId = playlistId || '';
   count = count || 50;
   var chanVideosIds = getAllPlaylistIds(playlistId, count);
   for (var i = 0; i < chanVideosIds.length; i++) {
