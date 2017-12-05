@@ -42,10 +42,10 @@ function getAllPlaylistIds(playlistId, count) {
 }
 
 function delAllPlaylistVideos(playlistId, count) {
-  playlistId = playlistId || '';
-  count = count || 50;
+  playlistId = playlistId || 'PL6VHFTCn-SVjRhR9J8MXk48uJjHWLt_Ri';
   var chanVideosIds = getAllPlaylistIds(playlistId, count);
   for (var i = 0; i < chanVideosIds.length; i++) {
+    Logger.log('removing playlistitemid ' + chanVideosIds[i]);
     playlistItemsDelete( chanVideosIds[i], {} );
   }
 }
@@ -96,7 +96,7 @@ function getRedditVideoIds(subreddit, rtime, count) {
 }
 
 function updatePlaylists(sheet) {
-  if (sheet.toString() != 'Sheet') sheet = SpreadsheetApp.openById('XXXXXXXXXX').getSheets()[0]; // Hotfix, Paste the Sheet ID here, it's the long string in the Sheet URL
+  if (!sheet || sheet.toString() != 'Sheet') sheet = SpreadsheetApp.openById('XXXXXXXXXX').getSheets()[0]; // Hotfix, Paste the Sheet ID here, it's the long string in the Sheet URL
   var data = sheet.getDataRange().getValues();
   var reservedTableRows = 3; // Start of the range of the PlaylistID+ChannelID data
   var reservedTableColumns = 2; // Start of the range of the ChannelID data
@@ -144,7 +144,7 @@ function updatePlaylists(sheet) {
     }
     
     // Clear the playlist if this is only a reddit playlist
-    if (subreddits.length > 0 && channelIds.length == playlistIds.length == 0) {
+    if (subreddits.length > 0 && channelIds.length === 0 && playlistIds.length === 0) {
       delAllPlaylistVideos(playlistId);
       Logger.log('cleared reddit playlist before repopulating');
     }
@@ -160,7 +160,7 @@ function updatePlaylists(sheet) {
     }
     
     for (var i = 0; i < subreddits.length; i++) {
-      videoIds.push.apply(videoIds, getRedditVideoIds(subreddits[i], lastTimestamp));
+      videoIds.push.apply(videoIds, getRedditVideoIds(subreddits[i], 'day'));
     }
 
     //causes only first line to be updated
